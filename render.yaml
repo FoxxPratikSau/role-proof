@@ -4,7 +4,9 @@ services:
     runtime: node
     plan: 0.5c-512mb
     region: singapore
-    buildCommand: npm ci && npm run build
+    # NODE_ENV=production makes npm omit devDependencies by default, but the
+    # Next.js build and the prepare hook need the toolchain declared there.
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npm run start -- --hostname 0.0.0.0 --port $PORT
     healthCheckPath: /
     autoDeployTrigger: commit

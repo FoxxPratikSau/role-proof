@@ -162,7 +162,7 @@ The repository includes a `render.yaml` Blueprint that provisions the complete
 production stack in Render's Singapore region:
 
 - `roleproof-web`: the public Next.js application at
-  `roleproof.pratiksav.xyz`;
+  `roleproof.pratiksau.xyz`;
 - `roleproof-api`: the private Dockerized Go API;
 - `roleproof-db`: private managed PostgreSQL 18.
 
@@ -172,7 +172,7 @@ database connection details automatically. The Blueprint uses the smallest
 always-on compute plans, so review the estimated monthly cost before confirming.
 
 After the services are healthy, add the DNS record Render displays for
-`roleproof.pratiksav.xyz` at the domain's DNS provider, then verify the domain
+`roleproof.pratiksau.xyz` at the domain's DNS provider, then verify the domain
 in Render. Do not seed the production database with local demo data.
 
 ## Stack

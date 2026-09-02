@@ -11,7 +11,7 @@ services:
     healthCheckPath: /
     autoDeployTrigger: commit
     domains:
-      - roleproof.pratiksav.xyz
+      - roleproof.pratiksau.xyz
     envVars:
       - key: NODE_ENV
         value: production
@@ -35,7 +35,7 @@ services:
       - key: API_ADDRESS
         value: ":8080"
       - key: ALLOWED_ORIGIN
-        value: https://roleproof.pratiksav.xyz
+        value: https://roleproof.pratiksau.xyz
       - key: DATABASE_MAX_CONNS
         value: "5"
       - key: DATABASE_URL

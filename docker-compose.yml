@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-roleproof}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER:-roleproof}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "5432:5432"
+    volumes:
+      # PostgreSQL 18 stores data below a major-version-specific directory.
+      # Mount the parent so future pg_upgrade --link operations stay in-volume.
+      - roleproof-postgres:/var/lib/postgresql
+      - ./backend/migrations:/migrations:ro
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-http://localhost:3000}
+      API_ADDRESS: :8080
+      DATABASE_URL: postgres://${POSTGRES_USER:-roleproof}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-roleproof}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "8080:8080"
+
+volumes:
+  roleproof-postgres:

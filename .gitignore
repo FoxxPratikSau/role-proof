@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+
+# Next.js and TypeScript build output
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+public/pdf.worker.min.mjs
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Test and coverage artifacts
+coverage/
+*.coverage
+*.coverprofile
+backend/coverage.out
+.playwright-cli/
+playwright-report/
+test-results/
+premium-audit.json
+
+# Go build artifacts
+backend/roleproof-api
+backend/bin/
+*.test
+
+# Local exports and scratch files
+output/
+tmp/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo

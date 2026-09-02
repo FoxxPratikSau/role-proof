@@ -1,0 +1,517 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Play, Square, FileText, AlertTriangle, Copy } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PipelineProgress } from "@/components/pipeline/PipelineProgress";
+import { JDAnalysisPanel } from "@/components/pipeline/JDAnalysisPanel";
+import { ExperienceMappingPanel } from "@/components/pipeline/ExperienceMappingPanel";
+import { ResumeDisplay } from "@/components/pipeline/ResumeDisplay";
+import { CritiquePanel } from "@/components/pipeline/CritiquePanel";
+import VerificationPanel from "@/components/pipeline/VerificationPanel";
+import { usePipeline } from "@/hooks/usePipeline";
+import { useMasterResume, useResumeTemplates } from "@/hooks/useResumeData";
+import { getActiveAIConfig } from "@/lib/storage";
+import { templateNeedsReanalysis } from "@/lib/templates/presentation";
+
+import { copyToClipboard } from "@/lib/export";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+
+const EXAMPLE_JD = `Senior Frontend Engineer
+
+We're looking for a Senior Frontend Engineer to join our product team. You'll build and maintain high-quality web applications using React and TypeScript.
+
+Requirements:
+- 5+ years of experience in frontend development
+- Strong proficiency in React, TypeScript, and modern CSS
+- Experience with state management (Redux, Zustand, or similar)
+- Familiarity with testing frameworks (Jest, Playwright)
+- Understanding of web performance optimization
+- Nice to have: Next.js, GraphQL, design systems`;
+
+const BuilderPage = () => {
+  const router = useRouter();
+  const pipeline = usePipeline();
+  const masterQuery = useMasterResume();
+  const templatesQuery = useResumeTemplates();
+  const [jd, setJd] = useState("");
+  const [activeTab, setActiveTab] = useState("analysis");
+  const [userPickedTab, setUserPickedTab] = useState(false);
+  const resumeLoaded = !masterQuery.isLoading;
+  const selectedTemplate = templatesQuery.data?.find(
+    (template) => template.id === masterQuery.data?.selected_template_id,
+  );
+  const handleRun = () => {
+    if (!jd.trim()) {
+      toast.error("Paste a job description first");
+      return;
+    }
+    if (!masterQuery.data) {
+      toast.error("No master resume found. Add one first.");
+      router.push("/app/resume");
+      return;
+    }
+    if (
+      selectedTemplate?.source_type === "uploaded" &&
+      templateNeedsReanalysis(selectedTemplate.specification)
+    ) {
+      toast.error(
+        "This template was analyzed by the old text-only importer. Delete it and upload the PDF again.",
+      );
+      router.push("/app/templates");
+      return;
+    }
+    const { apiKey } = getActiveAIConfig();
+    if (!apiKey) {
+      toast.error("Set your AI provider key in Settings first");
+      router.push("/app/settings");
+      return;
+    }
+    setActiveTab("analysis");
+    setUserPickedTab(false);
+    pipeline.run(
+      jd,
+      masterQuery.data.content as unknown as Record<string, unknown>,
+      selectedTemplate,
+    );
+  };
+  const pipelineDone = !pipeline.running && pipeline.currentResume != null;
+  const latexAvailable = !pipeline.running && pipeline.latexSource != null;
+  const latexPhase =
+    pipeline.running &&
+    (pipeline.currentStep === "resume-spec" ||
+      pipeline.currentStep === "latex-generation" ||
+      pipeline.currentStep === "latex-verification");
+  const isConverged =
+    pipeline.critique?.score != null &&
+    pipeline.critique.score >= 85 &&
+    pipeline.critique.atsScore >= 90 &&
+    pipeline.critique.isConverged;
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (pipelineDone) setUserPickedTab(true);
+  };
+  // Auto-advance to LaTeX tab when it becomes available
+  const displayTab =
+    pipelineDone && !userPickedTab
+      ? latexAvailable
+        ? "latex"
+        : "resume"
+      : activeTab;
+  return (
+    <div className="flex flex-1 flex-col lg:h-screen lg:flex-row lg:overflow-hidden">
+      {/* Left: JD Input */}
+      <section className="bg-card flex shrink-0 flex-col border-b p-4 sm:p-6 lg:w-[23rem] lg:border-r lg:border-b-0">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <p className="text-primary font-mono text-[9px] font-medium tracking-[0.15em] uppercase">
+              Input
+            </p>
+            <h1 className="mt-1 text-lg font-semibold tracking-tight">
+              Job description
+            </h1>
+          </div>
+          {resumeLoaded && (
+            <Badge variant="secondary" className="text-xs">
+              Resume loaded
+            </Badge>
+          )}
+        </div>
+
+        {!resumeLoaded ? (
+          <Card>
+            <CardContent className="flex flex-col items-center gap-3 py-8">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-4 w-48" />
+            </CardContent>
+          </Card>
+        ) : !masterQuery.data ? (
+          <Card>
+            <CardContent className="flex flex-col items-center gap-3 py-8">
+              <AlertTriangle className="size-6 text-yellow-600" />
+              <p className="text-muted-foreground text-center text-sm">
+                No master resume found. Add your resume first to start building.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/app/resume")}
+              >
+                <FileText className="mr-1.5 size-3.5" />
+                Add Master Resume
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            <Textarea
+              aria-label="Job description"
+              placeholder="Paste the job description here..."
+              className="min-h-[260px] flex-1 resize-none font-mono text-sm lg:min-h-[200px]"
+              value={jd}
+              onChange={(e) => setJd(e.target.value)}
+              disabled={pipeline.running}
+            />
+            <div className="mt-3 flex gap-2">
+              {!pipeline.running ? (
+                <Button onClick={handleRun} className="flex-1">
+                  <Play className="mr-1.5 size-4" />
+                  Generate resume
+                </Button>
+              ) : (
+                <Button
+                  variant="destructive"
+                  onClick={pipeline.cancel}
+                  className="flex-1"
+                >
+                  <Square className="mr-1.5 size-4" />
+                  Cancel
+                </Button>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-1"
+              onClick={() => setJd(EXAMPLE_JD)}
+              disabled={pipeline.running}
+            >
+              Load example
+            </Button>
+          </>
+        )}
+      </section>
+
+      {/* Right: Results */}
+      <section className="flex min-h-[34rem] min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="bg-card flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div>
+            <p className="text-primary font-mono text-[9px] font-medium tracking-[0.15em] uppercase">
+              Workspace
+            </p>
+            <h2 className="mt-1 text-sm font-semibold">Tailored resume</h2>
+          </div>
+          {(pipeline.running || pipeline.currentResume) && (
+            <PipelineProgress
+              currentStep={pipeline.currentStep}
+              running={pipeline.running}
+              iteration={pipeline.iteration}
+            />
+          )}
+        </div>
+
+        {pipeline.error && (
+          <div className="border-destructive/50 bg-destructive/10 text-destructive mx-6 mt-4 rounded-lg border p-4 text-sm">
+            {pipeline.error}
+          </div>
+        )}
+
+        {!pipeline.analysis && !pipeline.running && !pipeline.error && (
+          <div className="flex flex-1 items-center justify-center">
+            <div className="text-center">
+              <FileText className="text-muted-foreground/40 mx-auto size-10" />
+              <p className="text-muted-foreground mt-3 text-sm">
+                Paste a job description and click Generate Resume
+              </p>
+            </div>
+          </div>
+        )}
+
+        {pipelineDone && (
+          <div className="mx-6 mt-4 rounded-lg border border-green-600/30 bg-green-600/10 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-green-700 dark:text-green-400">
+                  {isConverged
+                    ? "Resume Converged!"
+                    : `Resume Ready (${pipeline.iteration} iterations)`}
+                  {latexAvailable && " • LaTeX Generated"}
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  {isConverged
+                    ? `Score: ${pipeline.critique?.score}/100 — ATS Score: ${pipeline.critique?.atsScore}/100`
+                    : `Max iterations reached. Best score: ${pipeline.bestScore}/100.`}
+                  {pipeline.convergenceResult?.reason &&
+                    pipeline.convergenceResult.reason !== "llm_judgment" &&
+                    ` • Stopped: ${pipeline.convergenceResult.reason.replace(/_/g, " ")}`}
+                </p>
+                {pipeline.bestScore > (pipeline.critique?.score ?? 0) && (
+                  <p className="mt-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+                    Best resume (score {pipeline.bestScore}) shown. Last
+                    iteration scored {pipeline.critique?.score}.
+                  </p>
+                )}
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  if (pipeline.currentResume) {
+                    await copyToClipboard(pipeline.currentResume);
+                  }
+                }}
+              >
+                <Copy className="mr-1.5 size-3.5" />
+                Copy
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {(pipeline.analysis || pipeline.running) && (
+          <div className="flex-1 overflow-auto p-4 sm:p-6">
+            <Tabs value={displayTab} onValueChange={handleTabChange}>
+              <div className="overflow-x-auto pb-1">
+                <TabsList className="min-w-max">
+                  <TabsTrigger value="analysis">
+                    Analysis
+                    {pipeline.analysis && (
+                      <CheckBadge className="ml-1.5 size-3 text-green-600" />
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="mapping">
+                    Mapping
+                    {pipeline.mapping && (
+                      <CheckBadge className="ml-1.5 size-3 text-green-600" />
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="resume"
+                    className={
+                      pipelineDone && !userPickedTab && !latexAvailable
+                        ? "ring-2 ring-green-500/50"
+                        : ""
+                    }
+                  >
+                    Text
+                    {pipeline.currentResume && (
+                      <span className="ml-1.5 flex size-2 rounded-full bg-green-500" />
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="critique">
+                    Critique
+                    {pipeline.critique && (
+                      <CheckBadge className="ml-1.5 size-3 text-green-600" />
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="latex"
+                    className={
+                      latexAvailable && !userPickedTab
+                        ? "ring-2 ring-green-500/50"
+                        : ""
+                    }
+                  >
+                    LaTeX
+                    {pipeline.latexSource && (
+                      <span className="ml-1.5 flex size-2 rounded-full bg-green-500" />
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="verify">
+                    Verify
+                    {pipeline.latexVerification &&
+                      (pipeline.latexVerification.passes ? (
+                        <CheckBadge className="ml-1.5 size-3 text-green-600" />
+                      ) : (
+                        <span className="ml-1.5 flex size-2 rounded-full bg-amber-500" />
+                      ))}
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              <TabsContent value="analysis" className="mt-4">
+                {pipeline.analysis ? (
+                  <ErrorBoundary>
+                    <JDAnalysisPanel data={pipeline.analysis} />
+                  </ErrorBoundary>
+                ) : pipeline.running &&
+                  pipeline.currentStep === "jd-analysis" ? (
+                  <LoadingCards />
+                ) : (
+                  <p className="text-muted-foreground py-8 text-center text-sm">
+                    Waiting for JD analysis...
+                  </p>
+                )}
+              </TabsContent>
+
+              <TabsContent value="mapping" className="mt-4">
+                {pipeline.mapping ? (
+                  <ErrorBoundary>
+                    <ExperienceMappingPanel data={pipeline.mapping} />
+                  </ErrorBoundary>
+                ) : pipeline.running &&
+                  pipeline.currentStep === "experience-mapping" ? (
+                  <LoadingCards />
+                ) : (
+                  <p className="text-muted-foreground py-8 text-center text-sm">
+                    Waiting for experience mapping...
+                  </p>
+                )}
+              </TabsContent>
+
+              <TabsContent value="resume" className="mt-4">
+                {pipeline.currentResume ? (
+                  <ErrorBoundary>
+                    <ResumeDisplay
+                      resume={pipeline.currentResume}
+                      iteration={pipeline.iteration}
+                      bestScore={pipeline.bestScore}
+                      totalIterations={pipeline.history.length}
+                      roleTitle={pipeline.analysis?.roleTitle}
+                      companyName={pipeline.analysis?.companyName}
+                    />
+                  </ErrorBoundary>
+                ) : pipeline.running &&
+                  (pipeline.currentStep === "resume-generation" ||
+                    pipeline.currentStep === "resume-critique") ? (
+                  <LoadingResume />
+                ) : (
+                  <p className="text-muted-foreground py-8 text-center text-sm">
+                    Waiting for resume generation...
+                  </p>
+                )}
+              </TabsContent>
+
+              <TabsContent value="critique" className="mt-4">
+                {pipeline.critique ? (
+                  <ErrorBoundary>
+                    <CritiquePanel
+                      data={pipeline.critique}
+                      iteration={pipeline.iteration}
+                      converged={!!isConverged}
+                      history={pipeline.history}
+                      bestScore={pipeline.bestScore}
+                      convergenceResult={pipeline.convergenceResult}
+                    />
+                  </ErrorBoundary>
+                ) : pipeline.running &&
+                  pipeline.currentStep === "resume-critique" ? (
+                  <LoadingCards />
+                ) : (
+                  <p className="text-muted-foreground py-8 text-center text-sm">
+                    Waiting for critique...
+                  </p>
+                )}
+              </TabsContent>
+
+              {/* LaTeX Tab */}
+              <TabsContent value="latex" className="mt-4">
+                {pipeline.latexSource ? (
+                  <ErrorBoundary>
+                    <ResumeDisplay
+                      resume={pipeline.currentResume || ""}
+                      iteration={pipeline.iteration}
+                      bestScore={pipeline.bestScore}
+                      totalIterations={pipeline.history.length}
+                      roleTitle={pipeline.analysis?.roleTitle}
+                      companyName={pipeline.analysis?.companyName}
+                      showLatex={true}
+                      latexSource={pipeline.latexSource}
+                      latexHtmlBlob={pipeline.latexHtmlBlob}
+                      resumeSpec={pipeline.resumeSpec}
+                    />
+                  </ErrorBoundary>
+                ) : latexPhase ? (
+                  <LoadingResume />
+                ) : (
+                  <p className="text-muted-foreground py-8 text-center text-sm">
+                    LaTeX will be generated after the critique phase...
+                  </p>
+                )}
+              </TabsContent>
+
+              {/* Verify Tab */}
+              <TabsContent value="verify" className="mt-4">
+                {pipeline.latexVerification ? (
+                  <ErrorBoundary>
+                    <VerificationPanel
+                      verification={pipeline.latexVerification}
+                    />
+                  </ErrorBoundary>
+                ) : latexPhase &&
+                  pipeline.currentStep === "latex-verification" ? (
+                  <LoadingCards />
+                ) : (
+                  <p className="text-muted-foreground py-8 text-center text-sm">
+                    Verification runs after LaTeX compilation...
+                  </p>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+};
+
+export default BuilderPage;
+
+const CheckBadge = ({ className }: { className?: string }) => {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 16 16"
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        fillRule="evenodd"
+        d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"
+      />
+    </svg>
+  );
+};
+
+const LoadingCards = () => {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="rounded-xl border p-4">
+        <Skeleton className="mb-3 h-4 w-24" />
+        <Skeleton className="mb-2 h-5 w-48" />
+        <Skeleton className="h-4 w-32" />
+      </div>
+      <div className="rounded-xl border p-4">
+        <Skeleton className="mb-3 h-3 w-20" />
+        <div className="flex gap-2">
+          <Skeleton className="h-5 w-16 rounded-full" />
+          <Skeleton className="h-5 w-20 rounded-full" />
+          <Skeleton className="h-5 w-14 rounded-full" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const LoadingResume = () => {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-3 w-24" />
+        <div className="flex gap-2">
+          <Skeleton className="h-7 w-16" />
+          <Skeleton className="h-7 w-24" />
+        </div>
+      </div>
+      <div className="rounded-lg border p-4">
+        <Skeleton className="mb-2 h-3 w-full" />
+        <Skeleton className="mb-2 h-3 w-3/4" />
+        <Skeleton className="mb-6 h-3 w-5/6" />
+        <Skeleton className="mb-2 h-3 w-1/2" />
+        <Skeleton className="mb-2 h-3 w-full" />
+        <Skeleton className="mb-2 h-3 w-2/3" />
+        <Skeleton className="mb-6 h-3 w-4/5" />
+        <Skeleton className="mb-2 h-3 w-full" />
+        <Skeleton className="mb-2 h-3 w-3/4" />
+        <Skeleton className="h-3 w-1/2" />
+      </div>
+    </div>
+  );
+};

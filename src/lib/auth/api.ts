@@ -9,6 +9,10 @@ interface LoginResponse {
   user: AuthUser;
 }
 
+interface RegisterResponse {
+  user: AuthUser;
+}
+
 interface ErrorResponse {
   error?: string;
   fields?: Record<string, string>;
@@ -70,6 +74,37 @@ export const loginWithPassword = async (
     body.expires_in <= 0
   ) {
     throw new AuthAPIError(502, "invalid authentication response");
+  }
+  return body;
+};
+
+export const registerAccount = async (
+  name: string,
+  email: string,
+  password: string,
+): Promise<RegisterResponse> => {
+  let response: Response;
+  try {
+    response = await fetch(backendApiURL("auth/register"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password }),
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch {
+    throw new AuthAPIUnavailableError();
+  }
+  const body = await readJSON<RegisterResponse & ErrorResponse>(response);
+  if (!response.ok || !body) {
+    throw new AuthAPIError(
+      response.status,
+      body?.error || "registration failed",
+      body?.fields,
+    );
+  }
+  if (!body.user?.id || !body.user.email) {
+    throw new AuthAPIError(502, "invalid registration response");
   }
   return body;
 };

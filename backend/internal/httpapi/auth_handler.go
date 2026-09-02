@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/mail"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/foxxpratiksau/roleproof/backend/internal/auth"
@@ -127,7 +128,36 @@ func validateRegister(request registerRequest) map[string]string {
 	case utf8.RuneCountInString(name) > 120:
 		fields["name"] = "must be at most 120 characters"
 	}
+
+	password := request.Password
+	switch {
+	case password == "":
+		// validateLogin already reports the required-field error.
+	case utf8.RuneCountInString(password) < 8:
+		fields["password"] = "must be at least 8 characters"
+	case len(password) > 72:
+		fields["password"] = "must be at most 72 bytes"
+	case !hasRequiredPasswordCharacters(password):
+		fields["password"] = "must include uppercase, lowercase, number, and symbol"
+	}
 	return fields
+}
+
+func hasRequiredPasswordCharacters(password string) bool {
+	var hasUpper, hasLower, hasNumber, hasSymbol bool
+	for _, character := range password {
+		switch {
+		case unicode.IsUpper(character):
+			hasUpper = true
+		case unicode.IsLower(character):
+			hasLower = true
+		case unicode.IsDigit(character):
+			hasNumber = true
+		case unicode.IsPunct(character) || unicode.IsSymbol(character):
+			hasSymbol = true
+		}
+	}
+	return hasUpper && hasLower && hasNumber && hasSymbol
 }
 
 func validateLogin(request loginRequest) map[string]string {

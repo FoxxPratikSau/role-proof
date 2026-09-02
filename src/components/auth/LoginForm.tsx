@@ -1,25 +1,27 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
-import { AlertCircle, ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
+import { useActionState, useEffect, useRef } from "react";
+import { AlertCircle, ArrowRight, CircleCheck, Loader2 } from "lucide-react";
 import { loginAction } from "@/lib/auth/actions";
 import { INITIAL_LOGIN_STATE } from "@/lib/auth/validation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordField } from "@/components/auth/PasswordField";
 
 export const LoginForm = ({
   nextPath,
   notice,
+  noticeTone = "error",
 }: {
   nextPath: string;
   notice?: string;
+  noticeTone?: "error" | "success";
 }) => {
   const [state, formAction, pending] = useActionState(
     loginAction,
     INITIAL_LOGIN_STATE,
   );
-  const [showPassword, setShowPassword] = useState(false);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -37,13 +39,24 @@ export const LoginForm = ({
 
       {(state.error || notice) && (
         <div
-          role={state.error ? "alert" : "status"}
-          className="flex gap-3 rounded-xl border border-destructive/25 bg-destructive/6 p-3.5 text-sm leading-6 text-foreground"
+          role={state.error || noticeTone === "error" ? "alert" : "status"}
+          className={`flex gap-3 rounded-xl border p-3.5 text-sm leading-6 text-foreground ${
+            state.error || noticeTone === "error"
+              ? "border-destructive/25 bg-destructive/6"
+              : "border-success/25 bg-success/6"
+          }`}
         >
-          <AlertCircle
-            className="mt-0.5 size-4 shrink-0 text-destructive"
-            aria-hidden="true"
-          />
+          {state.error || noticeTone === "error" ? (
+            <AlertCircle
+              className="mt-0.5 size-4 shrink-0 text-destructive"
+              aria-hidden="true"
+            />
+          ) : (
+            <CircleCheck
+              className="mt-0.5 size-4 shrink-0 text-success"
+              aria-hidden="true"
+            />
+          )}
           <span>{state.error ?? notice}</span>
         </div>
       )}
@@ -74,46 +87,16 @@ export const LoginForm = ({
         </p>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
-        <div className="relative">
-          <Input
-            key={`password-${state.attempt}`}
-            ref={passwordRef}
-            id="password"
-            name="password"
-            type={showPassword ? "text" : "password"}
-            autoComplete="current-password"
-            className="h-12 bg-card px-3.5 pr-12"
-            aria-invalid={Boolean(state.fields?.password)}
-            aria-describedby={
-              state.fields?.password ? "password-error" : undefined
-            }
-            disabled={pending}
-            required
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((visible) => !visible)}
-            aria-label={showPassword ? "Hide password" : "Show password"}
-            aria-pressed={showPassword}
-            disabled={pending}
-            className="absolute top-1/2 right-1.5 flex size-9 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
-          >
-            {showPassword ? (
-              <EyeOff className="size-4" aria-hidden="true" />
-            ) : (
-              <Eye className="size-4" aria-hidden="true" />
-            )}
-          </button>
-        </div>
-        <p
-          id="password-error"
-          className="min-h-5 text-xs leading-5 text-destructive"
-        >
-          {state.fields?.password}
-        </p>
-      </div>
+      <PasswordField
+        key={`password-${state.attempt}`}
+        ref={passwordRef}
+        id="password"
+        name="password"
+        label="Password"
+        autoComplete="current-password"
+        error={state.fields?.password}
+        disabled={pending}
+      />
 
       <Button
         type="submit"

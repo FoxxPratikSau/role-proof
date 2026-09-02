@@ -43,6 +43,8 @@ No `test` or `typecheck` scripts — only lint is wired up. Pre-commit hooks run
 | Path            | Description                                                                      |
 | --------------- | -------------------------------------------------------------------------------- |
 | `/`             | Landing page (`src/app/page.tsx`)                                                |
+| `/login`        | Existing-account sign in (`src/app/login/page.tsx`)                              |
+| `/signup`       | Account creation with password confirmation (`src/app/signup/page.tsx`)          |
 | `/app`          | Redirect: → `/app/builder` if resume set, else `/app/resume`                     |
 | `/app/builder`  | Pipeline: JD input → analysis → mapping → generation → critique → LaTeX → export |
 | `/app/resume`   | Master resume editor + AI extraction from PDF/DOCX                               |

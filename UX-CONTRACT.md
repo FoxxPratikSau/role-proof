@@ -24,7 +24,7 @@ The repository implementation and route structure are the current product eviden
 | Form           | Shared Input, Textarea, Label, and Button primitives         | UX contract + shared primitives     | setup / edit                     | validation + browser flow  |
 | Scrollbar      | Global application stylesheet                                | `DESIGN.md` + `src/app/globals.css` | geometry exceptions              | computed style             |
 | Toast          | Shared Sonner provider in root layout                        | UX contract + shared provider       | success / warning / info / error | live region + browser flow |
-| Authentication | Go auth service + Next.js server actions and HttpOnly cookie | API contract + UX contract          | credentials                      | unit + browser flow        |
+| Authentication | Go auth service + Next.js server actions and HttpOnly cookie | API contract + UX contract          | sign in / create account         | unit + browser flow        |
 | Authorization  | Shared page permission map + server-side page guard          | API role + UX contract              | workspace / administration       | unit + 403 browser flow    |
 | Server state   | TanStack Query provider + authenticated Next route handlers  | Go API + PostgreSQL                 | resume / templates               | build + browser flow       |
 | Resume editor  | Controlled master-resume editor                              | PostgreSQL master resume record     | autosave / manual save           | visible save state         |
@@ -41,14 +41,15 @@ The repository implementation and route structure are the current product eviden
 
 ## Flow ledger
 
-| Operation                | Trigger                | Pending                    | Success destination     | Success feedback    | Failure recovery                      | Focus outcome       | Source ref                             |
-| ------------------------ | ---------------------- | -------------------------- | ----------------------- | ------------------- | ------------------------------------- | ------------------- | -------------------------------------- |
-| Add master resume        | Extract resume details | Stable busy button         | Master resume view      | saved state         | inline retry with source preserved    | result heading      | `src/app/app/resume/page.tsx`          |
-| Test AI connection       | Test connection        | Stable busy button         | owning workspace        | shared toast        | error toast; settings preserved       | trigger             | `src/app/app/settings/page.tsx`        |
-| Generate tailored resume | Generate resume        | Pipeline progress + cancel | results workspace       | completion banner   | inline error; input preserved         | results region      | `src/app/app/builder/page.tsx`         |
-| Cancel generation        | Cancel                 | immediate cancellation     | current builder         | pipeline state      | job description preserved             | generate action     | `src/app/app/builder/page.tsx`         |
-| Sign in                  | Sign in                | Stable busy button         | intended `/app/*` route | authenticated shell | inline generic error; email preserved | first invalid field | `src/app/login/page.tsx`               |
-| Sign out                 | Sign out               | Stable busy button         | sign-in page            | signed-out state    | session remains until retry           | email field         | `src/components/layout/AppSidebar.tsx` |
+| Operation                | Trigger                | Pending                    | Success destination     | Success feedback      | Failure recovery                      | Focus outcome       | Source ref                             |
+| ------------------------ | ---------------------- | -------------------------- | ----------------------- | --------------------- | ------------------------------------- | ------------------- | -------------------------------------- |
+| Add master resume        | Extract resume details | Stable busy button         | Master resume view      | saved state           | inline retry with source preserved    | result heading      | `src/app/app/resume/page.tsx`          |
+| Test AI connection       | Test connection        | Stable busy button         | owning workspace        | shared toast          | error toast; settings preserved       | trigger             | `src/app/app/settings/page.tsx`        |
+| Generate tailored resume | Generate resume        | Pipeline progress + cancel | results workspace       | completion banner     | inline error; input preserved         | results region      | `src/app/app/builder/page.tsx`         |
+| Cancel generation        | Cancel                 | immediate cancellation     | current builder         | pipeline state        | job description preserved             | generate action     | `src/app/app/builder/page.tsx`         |
+| Sign in                  | Sign in                | Stable busy button         | intended `/app/*` route | authenticated shell   | inline generic error; email preserved | first invalid field | `src/app/login/page.tsx`               |
+| Create account           | Create account         | Stable busy button         | sign-in page            | inline success notice | field errors; name/email preserved    | first invalid field | `src/app/signup/page.tsx`              |
+| Sign out                 | Sign out               | Stable busy button         | sign-in page            | signed-out state      | session remains until retry           | email field         | `src/components/layout/AppSidebar.tsx` |
 
 ## Navigation and responsive behavior
 
@@ -57,6 +58,7 @@ The repository implementation and route structure are the current product eviden
 - Builder result tabs use the shared authored Tabs primitive and scroll horizontally when needed.
 - Focus rings remain visible and content reserves space for persistent mobile navigation.
 - `/app/*` is protected optimistically by `src/proxy.ts` and authoritatively by the Go-backed session check in the app layout. Successful sign-in returns to a safe intended `/app/*` path.
+- `/login` and `/signup` are separate public credential flows. Account creation requires password confirmation and server-enforced character complexity, then returns to sign-in with an inline success notice.
 - The workspace navigation includes master-resume and template-gallery destinations on both desktop and mobile.
 - Page permissions are defined once in `src/lib/auth/permissions.ts`; route layouts enforce them on the server. Direct navigation by an authenticated but disallowed role returns the app-owned 403 page. `/app/admin` is the concrete, intentionally unlinked admin-only boundary.
 

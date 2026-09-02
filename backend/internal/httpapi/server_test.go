@@ -101,7 +101,7 @@ func TestAPIRegister(t *testing.T) {
 	}{
 		{
 			name:       "valid registration",
-			body:       `{"name":"New User","email":"new@example.com","password":"password123"}`,
+			body:       `{"name":"New User","email":"new@example.com","password":"ValidPass1!"}`,
 			wantStatus: http.StatusCreated,
 		},
 		{
@@ -116,8 +116,44 @@ func TestAPIRegister(t *testing.T) {
 			},
 		},
 		{
+			name:       "password without uppercase",
+			body:       `{"name":"New User","email":"new@example.com","password":"password123"}`,
+			wantStatus: http.StatusBadRequest,
+			wantError:  "validation failed",
+			wantFields: map[string]string{
+				"password": "must include uppercase, lowercase, number, and symbol",
+			},
+		},
+		{
+			name:       "password without lowercase",
+			body:       `{"name":"New User","email":"new@example.com","password":"PASSWORD1!"}`,
+			wantStatus: http.StatusBadRequest,
+			wantError:  "validation failed",
+			wantFields: map[string]string{
+				"password": "must include uppercase, lowercase, number, and symbol",
+			},
+		},
+		{
+			name:       "password without number",
+			body:       `{"name":"New User","email":"new@example.com","password":"Password!!"}`,
+			wantStatus: http.StatusBadRequest,
+			wantError:  "validation failed",
+			wantFields: map[string]string{
+				"password": "must include uppercase, lowercase, number, and symbol",
+			},
+		},
+		{
+			name:       "password without symbol",
+			body:       `{"name":"New User","email":"new@example.com","password":"Password12"}`,
+			wantStatus: http.StatusBadRequest,
+			wantError:  "validation failed",
+			wantFields: map[string]string{
+				"password": "must include uppercase, lowercase, number, and symbol",
+			},
+		},
+		{
 			name:       "duplicate email",
-			body:       `{"name":"Another","email":"test@example.com","password":"password123"}`,
+			body:       `{"name":"Another","email":"test@example.com","password":"ValidPass1!"}`,
 			wantStatus: http.StatusConflict,
 			wantError:  "email already registered",
 		},

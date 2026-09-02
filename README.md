@@ -135,9 +135,13 @@ Example registration body:
 {
   "name": "Pratik Sau",
   "email": "pratik@example.com",
-  "password": "password123"
+  "password": "RoleProof1!"
 }
 ```
+
+New passwords require at least 8 characters and must include an uppercase
+letter, lowercase letter, number, and symbol. The frontend also asks users to
+confirm the password before registration.
 
 Every response uses JSON. Validation failures return field-level errors, invalid credentials return `401`, authorization middleware returns `403`, and unknown routes return `404` with `{ "error": "not found" }`.
 

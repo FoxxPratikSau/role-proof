@@ -6,7 +6,7 @@ const AppLayout = async ({ children }: { children: React.ReactNode }) => {
   return (
     <>
       <AppSidebar user={user} />
-      <main className="flex min-w-0 flex-1 flex-col pb-20 md:pb-0 md:pl-60">
+      <main className="flex min-w-0 flex-1 flex-col pb-20 md:pb-0 md:pl-60 md:transition-[padding] md:duration-150 md:peer-data-[collapsed=true]:pl-20">
         {children}
       </main>
     </>

@@ -54,8 +54,8 @@ The repository implementation and route structure are the current product eviden
 ## Navigation and responsive behavior
 
 - Document title policy: `{Page} — RoleProof`; the root metadata provides the product fallback.
-- Desktop uses a persistent labeled sidebar. Mobile uses a labeled bottom navigation bar with safe-area padding.
-- Builder result tabs use the shared authored Tabs primitive and scroll horizontally when needed.
+- Desktop uses a persistent sidebar that toggles between a 15rem labeled mode and a 5rem icon rail; compact navigation keeps accessible labels and visible tooltips. Mobile uses a labeled bottom navigation bar with safe-area padding.
+- Builder result tabs are the sole artifact navigator and scroll horizontally when needed. Running pipeline status uses a compact current-stage label and progress line rather than duplicating the tab row.
 - Focus rings remain visible and content reserves space for persistent mobile navigation.
 - `/app/*` is protected optimistically by `src/proxy.ts` and authoritatively by the Go-backed session check in the app layout. Successful sign-in returns to a safe intended `/app/*` path.
 - `/login` and `/signup` are separate public credential flows. Account creation requires password confirmation and server-enforced character complexity, then returns to sign-in with an inline success notice.

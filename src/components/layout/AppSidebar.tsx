@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import {
+  ChevronLeft,
+  ChevronRight,
   FileText,
   LayoutTemplate,
   Loader2,
@@ -12,6 +15,11 @@ import {
   Sparkles,
   WandSparkles,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { logoutAction } from "@/lib/auth/actions";
 import type { AuthUser } from "@/lib/auth/types";
 import { cn } from "@/lib/utils";
@@ -45,75 +53,152 @@ const navItems = [
 
 export const AppSidebar = ({ user }: { user: AuthUser }) => {
   const pathname = usePathname();
+  const [isCollapsed, setIsCollapsed] = useState(false);
   return (
-    <aside className="fixed inset-x-0 bottom-0 z-40 border-t border-sidebar-border bg-sidebar text-sidebar-foreground md:inset-y-0 md:right-auto md:w-60 md:border-t-0 md:border-r">
+    <aside
+      data-collapsed={isCollapsed}
+      className="peer fixed inset-x-0 bottom-0 z-40 border-t border-sidebar-border bg-sidebar text-sidebar-foreground md:inset-y-0 md:right-auto md:w-60 md:border-t-0 md:border-r md:transition-[width] md:duration-150 md:data-[collapsed=true]:w-20"
+    >
       <div className="hidden h-full flex-col md:flex">
-        <Link
-          href="/"
-          className="flex h-20 items-center gap-3 border-b border-sidebar-border px-5 focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none"
+        <div
+          className={cn(
+            "flex h-20 items-center border-b border-sidebar-border",
+            isCollapsed ? "justify-center gap-1 px-2" : "gap-2 px-5",
+          )}
         >
-          <span className="flex size-9 items-center justify-center rounded-lg bg-white text-sidebar">
-            <Sparkles className="size-4" aria-hidden="true" />
-          </span>
-          <span>
-            <span className="block text-base font-semibold tracking-tight">
-              RoleProof
+          <Link
+            href="/"
+            aria-label={isCollapsed ? "RoleProof home" : undefined}
+            className={cn(
+              "flex min-w-0 items-center gap-3 rounded-lg focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none",
+              !isCollapsed && "flex-1",
+            )}
+          >
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white text-sidebar">
+              <Sparkles className="size-4" aria-hidden="true" />
             </span>
-            <span className="block text-[11px] text-sidebar-foreground/55">
-              Candidate workspace
-            </span>
-          </span>
-        </Link>
+            {!isCollapsed && (
+              <span className="min-w-0">
+                <span className="block truncate text-base font-semibold tracking-tight">
+                  RoleProof
+                </span>
+                <span className="block truncate text-[11px] text-sidebar-foreground/55">
+                  Candidate workspace
+                </span>
+              </span>
+            )}
+          </Link>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  type="button"
+                  aria-label={
+                    isCollapsed ? "Expand sidebar" : "Collapse sidebar"
+                  }
+                  aria-expanded={!isCollapsed}
+                  onClick={() => setIsCollapsed((current) => !current)}
+                  className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-transparent text-sidebar-foreground/60 transition-colors hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none"
+                />
+              }
+            >
+              {isCollapsed ? (
+                <ChevronRight className="size-4" aria-hidden="true" />
+              ) : (
+                <ChevronLeft className="size-4" aria-hidden="true" />
+              )}
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              {isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            </TooltipContent>
+          </Tooltip>
+        </div>
         <nav
           aria-label="Workspace"
-          className="flex flex-1 flex-col gap-1.5 px-3 py-5"
+          className={cn(
+            "flex flex-1 flex-col gap-1.5 py-5",
+            isCollapsed ? "px-2" : "px-3",
+          )}
         >
-          <p className="px-3 pb-2 text-[10px] font-semibold tracking-[0.18em] text-sidebar-foreground/45 uppercase">
-            Workspace
-          </p>
+          {!isCollapsed && (
+            <p className="px-3 pb-2 text-[10px] font-semibold tracking-[0.18em] text-sidebar-foreground/45 uppercase">
+              Workspace
+            </p>
+          )}
           {navItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
-            return (
+            const link = (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-label={isCollapsed ? item.label : undefined}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none",
+                  isCollapsed && "justify-center px-0",
                   isActive
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-foreground/65 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
                 )}
               >
                 <item.icon className="size-[18px]" aria-hidden="true" />
-                {item.label}
-                {isActive && (
+                {!isCollapsed && item.label}
+                {isActive && !isCollapsed && (
                   <span className="ml-auto size-1.5 rounded-full bg-[#5bd2c4]" />
                 )}
               </Link>
             );
+            return isCollapsed ? (
+              <Tooltip key={item.href}>
+                <TooltipTrigger render={link} />
+                <TooltipContent side="right">{item.label}</TooltipContent>
+              </Tooltip>
+            ) : (
+              link
+            );
           })}
         </nav>
-        <div className="border-t border-sidebar-border p-4">
-          <div className="flex items-center gap-3 px-1">
+        <div
+          className={cn(
+            "border-t border-sidebar-border",
+            isCollapsed ? "p-2" : "p-4",
+          )}
+        >
+          <div
+            className={cn(
+              "flex items-center gap-3 px-1",
+              isCollapsed && "justify-center",
+            )}
+          >
             <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-sidebar-accent text-xs font-semibold text-sidebar-foreground uppercase">
               {initials(user.name)}
             </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold">
-                {user.name}
+            {!isCollapsed && (
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold">
+                  {user.name}
+                </span>
+                <span className="block truncate text-[11px] text-sidebar-foreground/50">
+                  {user.email}
+                </span>
               </span>
-              <span className="block truncate text-[11px] text-sidebar-foreground/50">
-                {user.email}
-              </span>
-            </span>
+            )}
           </div>
           <form action={logoutAction} className="mt-3" noValidate>
-            <SignOutButton />
+            {isCollapsed ? (
+              <Tooltip>
+                <TooltipTrigger render={<SignOutButton iconOnly />} />
+                <TooltipContent side="right">Sign out</TooltipContent>
+              </Tooltip>
+            ) : (
+              <SignOutButton />
+            )}
           </form>
-          <p className="mt-3 px-1 text-[11px] leading-4 text-sidebar-foreground/45">
-            Resume data syncs to your account. API keys stay in this browser.
-          </p>
+          {!isCollapsed && (
+            <p className="mt-3 px-1 text-[11px] leading-4 text-sidebar-foreground/45">
+              Resume data syncs to your account. API keys stay in this browser.
+            </p>
+          )}
         </div>
       </div>
 
@@ -148,18 +233,27 @@ export const AppSidebar = ({ user }: { user: AuthUser }) => {
   );
 };
 
-const SignOutButton = ({ compact = false }: { compact?: boolean }) => {
+const SignOutButton = ({
+  compact = false,
+  iconOnly = false,
+}: {
+  compact?: boolean;
+  iconOnly?: boolean;
+}) => {
   const { pending } = useFormStatus();
   return (
     <button
       type="submit"
       disabled={pending}
       aria-busy={pending}
+      aria-label={iconOnly ? (pending ? "Signing out" : "Sign out") : undefined}
       className={cn(
         "flex w-full items-center rounded-lg text-sidebar-foreground/65 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
-        compact
-          ? "flex-col justify-center gap-1 text-[11px] font-medium"
-          : "h-9 gap-2 px-2 text-xs font-medium",
+        iconOnly
+          ? "h-9 justify-center px-0"
+          : compact
+            ? "flex-col justify-center gap-1 text-[11px] font-medium"
+            : "h-9 gap-2 px-2 text-xs font-medium",
       )}
     >
       {pending ? (
@@ -167,7 +261,7 @@ const SignOutButton = ({ compact = false }: { compact?: boolean }) => {
       ) : (
         <LogOut className="size-[18px]" aria-hidden="true" />
       )}
-      {pending ? "Signing out" : "Sign out"}
+      {!iconOnly && (pending ? "Signing out" : "Sign out")}
     </button>
   );
 };

@@ -1,7 +1,6 @@
 "use client";
 
-import { CheckCircle2, Loader2, Circle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { CheckCircle2, Loader2 } from "lucide-react";
 import type { PipelineStep } from "@/types";
 
 const STEPS: { key: PipelineStep; label: string }[] = [
@@ -28,45 +27,44 @@ export const PipelineProgress = ({
   const currentIdx = currentStep
     ? STEPS.findIndex((s) => s.key === currentStep)
     : -1;
+  const completedSteps =
+    currentIdx < 0 ? 0 : running ? currentIdx : currentIdx + 1;
+  const currentLabel = currentStep
+    ? STEPS.find((step) => step.key === currentStep)?.label
+    : null;
+  const progress = Math.round((completedSteps / STEPS.length) * 100);
+
   return (
     <div
-      className="flex max-w-full items-center gap-1.5 overflow-x-auto pb-1 text-xs"
+      className="w-full max-w-64"
       aria-label="Resume generation progress"
+      aria-live="polite"
     >
-      {STEPS.map((step, i) => {
-        const isDone = currentIdx > i || (!running && currentIdx >= i);
-        const isCurrent = running && currentIdx === i;
-        const isPending = !isDone && !isCurrent;
-        return (
-          <div key={step.key} className="flex items-center gap-1.5">
-            {i > 0 && (
-              <div
-                className={cn("h-px w-4", isDone ? "bg-primary" : "bg-border")}
-              />
-            )}
-            <div
-              className={cn(
-                "flex items-center gap-1.5 rounded-full px-2 py-0.5 transition-colors",
-                isDone && "bg-primary/10 text-primary",
-                isCurrent && "bg-primary text-primary-foreground",
-                isPending && "bg-muted text-muted-foreground",
-              )}
-            >
-              {isCurrent ? (
-                <Loader2 className="size-3 animate-spin" />
-              ) : isDone ? (
-                <CheckCircle2 className="size-3" />
-              ) : (
-                <Circle className="size-3" />
-              )}
-              <span>{step.label}</span>
-              {step.key === "resume-critique" && iteration > 0 && (
-                <span className="tabular-nums">({iteration})</span>
-              )}
-            </div>
-          </div>
-        );
-      })}
+      <div className="mb-2 flex items-center justify-between gap-4 text-xs">
+        <span className="text-foreground flex min-w-0 items-center gap-1.5 font-medium">
+          {running ? (
+            <Loader2 className="text-primary size-3.5 shrink-0 animate-spin" />
+          ) : (
+            <CheckCircle2 className="text-success size-3.5 shrink-0" />
+          )}
+          <span className="truncate">
+            {running ? currentLabel : "Pipeline complete"}
+            {currentStep === "resume-critique" && iteration > 0
+              ? ` · pass ${iteration}`
+              : ""}
+          </span>
+        </span>
+        <span className="text-muted-foreground shrink-0 tabular-nums">
+          {Math.min(completedSteps + (running ? 1 : 0), STEPS.length)} of{" "}
+          {STEPS.length}
+        </span>
+      </div>
+      <div className="bg-muted h-1 overflow-hidden rounded-full">
+        <div
+          className="bg-primary h-full rounded-full transition-[width] duration-150"
+          style={{ width: `${running ? Math.max(progress, 8) : 100}%` }}
+        />
+      </div>
     </div>
   );
 };

@@ -63,7 +63,7 @@ Manrope carries display and body roles, with compact tracking for headings and h
 
 ## Layout
 
-The desktop app uses a 15rem labeled navigation sidebar and a flexible content canvas. Below 48rem, navigation becomes a fixed bottom bar and content reserves the safe area. Product pages use a 80rem maximum width where reading benefits; the builder uses the full available canvas. Spacing follows a 0.25rem base with 1.25rem panel padding and 2.5rem control height.
+The desktop app uses a 15rem labeled navigation sidebar that can retract to a 5rem icon rail, and a flexible content canvas. Below 48rem, navigation becomes a fixed bottom bar and content reserves the safe area. Product pages use a 80rem maximum width where reading benefits; the builder uses the full available canvas. Spacing follows a 0.25rem base with 1.25rem panel padding and 2.5rem control height.
 
 ## Elevation & Depth
 
@@ -85,11 +85,13 @@ Primary actions use solid cobalt. Secondary actions use a white or transparent s
 
 ### Navigation and data display
 
-Desktop navigation always shows icon and label; mobile uses a bottom bar with both. Current location is indicated by background, text, and `aria-current`. Pipeline tabs may scroll horizontally and keep the active item visible.
+Desktop navigation shows icon and label when expanded and retains accessible names and tooltips in its retractable icon-rail state; mobile uses a bottom bar with both. Current location is indicated by background, text, and `aria-current`. Pipeline tabs may scroll horizontally and keep the active item visible.
+
+The builder uses one content navigator for generated artifacts. Pipeline execution status stays secondary: a compact current-stage label and progress line, never a second row of stage pills competing with the tabs.
 
 ### Forms and overlays
 
-Fields have persistent labels, helper or error space, 2.5rem minimum height, and authored focus treatment. Textareas do not resize and instead use adequate fixed or flex height. File selection provides a visible button-equivalent drop zone, keyboard activation, drag state, accepted formats, selected file status, and recoverable errors. Provider and model use the shared authored Select.
+Fields have persistent labels, helper or error space, 2.5rem minimum height, and authored focus treatment. Textareas do not resize and instead use adequate fixed or flex height. File selection provides a centered, full-column button-equivalent drop zone with keyboard activation, drag state, accepted formats, selected file status, and recoverable errors. Provider and model use the shared authored Select.
 
 ### Iconography
 

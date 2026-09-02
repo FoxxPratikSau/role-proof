@@ -191,12 +191,12 @@ const BuilderPage = () => {
 
       {/* Right: Results */}
       <section className="flex min-h-[34rem] min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="bg-card flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="bg-card flex flex-col gap-4 border-b p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div>
             <p className="text-primary font-mono text-[9px] font-medium tracking-[0.15em] uppercase">
               Workspace
             </p>
-            <h2 className="mt-1 text-sm font-semibold">Tailored resume</h2>
+            <h2 className="mt-1 text-base font-semibold">Tailored resume</h2>
           </div>
           {(pipeline.running || pipeline.currentResume) && (
             <PipelineProgress
@@ -269,7 +269,7 @@ const BuilderPage = () => {
           <div className="flex-1 overflow-auto p-4 sm:p-6">
             <Tabs value={displayTab} onValueChange={handleTabChange}>
               <div className="overflow-x-auto pb-1">
-                <TabsList className="min-w-max">
+                <TabsList variant="line" className="min-w-max">
                   <TabsTrigger value="analysis">
                     Analysis
                     {pipeline.analysis && (
@@ -277,7 +277,7 @@ const BuilderPage = () => {
                     )}
                   </TabsTrigger>
                   <TabsTrigger value="mapping">
-                    Mapping
+                    Evidence
                     {pipeline.mapping && (
                       <CheckBadge className="ml-1.5 size-3 text-green-600" />
                     )}
@@ -290,13 +290,13 @@ const BuilderPage = () => {
                         : ""
                     }
                   >
-                    Text
+                    Resume
                     {pipeline.currentResume && (
                       <span className="ml-1.5 flex size-2 rounded-full bg-green-500" />
                     )}
                   </TabsTrigger>
                   <TabsTrigger value="critique">
-                    Critique
+                    Review
                     {pipeline.critique && (
                       <CheckBadge className="ml-1.5 size-3 text-green-600" />
                     )}
@@ -309,7 +309,7 @@ const BuilderPage = () => {
                         : ""
                     }
                   >
-                    LaTeX
+                    Layout
                     {pipeline.latexSource && (
                       <span className="ml-1.5 flex size-2 rounded-full bg-green-500" />
                     )}

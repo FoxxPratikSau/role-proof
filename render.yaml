@@ -28,11 +28,10 @@ services:
     region: singapore
     dockerfilePath: ./backend/Dockerfile
     dockerContext: .
-    healthCheckPath: /health
     autoDeployTrigger: commit
     envVars:
       - key: API_ADDRESS
-        value: ":10000"
+        value: ":8080"
       - key: ALLOWED_ORIGIN
         value: https://roleproof.pratiksav.xyz
       - key: DATABASE_MAX_CONNS
